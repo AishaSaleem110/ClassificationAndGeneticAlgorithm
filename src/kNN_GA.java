@@ -18,13 +18,13 @@ public class kNN_GA {
 
     public static double accuracy = 0.0;
     public static final double CROSSOVER_PROBABILITY = 0.8;
-    public static final double MUTATION_PROBABILITY = 0.3;
-    public static final int TOURNAMENT_SELECTION_SIZE = 4;
+    public static final double MUTATION_PROBABILITY = 0.1;
+    public static final int TOURNAMENT_SELECTION_SIZE = 2;
 
     public static final int POP_SIZE = 100; //population size, DO NOT MODIFY
     public static final int MAX_GEN = 50; //maximum generation, DO NOT MODIFY
 
-    public static final int NUMBER_OF_ELITE_CHROMOSOME = 15;
+    public static final int NUMBER_OF_ELITE_CHROMOSOME = 10;
     public static Random random = new Random();
 
     public static void main(String[] args) throws IOException {
@@ -155,12 +155,46 @@ public class kNN_GA {
 
         boolean[][] newPopulation = new boolean[POP_SIZE][FEATURE_SIZE];
         boolean[][] temp_newPopulation = new boolean[POP_SIZE][FEATURE_SIZE];
+        double[][] tempFitnessIndices=new double[POP_SIZE][2];//storing fitness and index
+        boolean[] tempSingleSol=new boolean[FEATURE_SIZE];
         for (int i = 0; i < POP_SIZE; i++) {
             temp_newPopulation[i] = tournamentSelection(sol, fitness);
         }
 
-        int incrementer=0;
-        for(int i=0; i<POP_SIZE/2 ; i++){
+        //compute fitness again
+        for (int j = 0; j < POP_SIZE; j++) {
+            int count = 0;
+            for (int k = 0; k < FEATURE_SIZE; k++) {
+                tempSingleSol[k] = sol[j][k];
+                if (tempSingleSol[k] == true) {
+                    count++;
+                }
+            }
+            tempFitnessIndices[j][1] = j;
+            if (count > 40)
+                tempFitnessIndices[j][0] = 0.0;
+
+            else {
+                tempFitnessIndices[j][0] = KNN(train, val, train_label, val_label, tempSingleSol) - (count / FEATURE_SIZE);
+            }
+
+        }
+
+        //pick top 10
+        Sort(tempFitnessIndices, 1);
+
+        //put them into newPopulation as it is
+
+        for(int i=POP_SIZE-1;i>POP_SIZE-NUMBER_OF_ELITE_CHROMOSOME-1;i--){
+            newPopulation[POP_SIZE-i-1]=temp_newPopulation[i];
+        }
+
+
+
+
+        //check if parent1 and parent2 belong to indices in fit population , regenerate
+        int incrementer=NUMBER_OF_ELITE_CHROMOSOME;
+        for(int i=0; i<POP_SIZE/2 && incrementer<POP_SIZE; i++){
 
             int parent1 = random.nextInt(POP_SIZE - 1);
             int parent2 = random.nextInt(POP_SIZE - 1);
@@ -171,7 +205,6 @@ public class kNN_GA {
                 newPopulation[incrementer++]=mutation(crossedOverChildren[j]);
             }
 
-           // return newPopulation;
         }
 
         return newPopulation;
@@ -226,15 +259,6 @@ public class kNN_GA {
         for (int gen = 0; gen < MAX_GEN; gen++) { //do for many generations
 
             sol = new_sol; //parent copied as children for GA algorithm
-
-
-            //this code should be moved up before calculating fitness
-
-            //write code to do selection
-
-            //write code to do mutation
-
-            //write code to do crossover
 
             sol = evolve(sol, fitness);
 
