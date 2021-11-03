@@ -1,10 +1,7 @@
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Random;
-import java.util.Scanner;
+import java.util.*;
 
 public class kNN_GA {
 
@@ -19,12 +16,12 @@ public class kNN_GA {
     public static double accuracy = 0.0;
     public static final double CROSSOVER_PROBABILITY = 0.8;
     public static final double MUTATION_PROBABILITY = 0.1;
-    public static final int TOURNAMENT_SELECTION_SIZE = 2;
+    public static final int TOURNAMENT_SELECTION_SIZE = 5;
 
     public static final int POP_SIZE = 100; //population size, DO NOT MODIFY
     public static final int MAX_GEN = 50; //maximum generation, DO NOT MODIFY
 
-    public static final int NUMBER_OF_ELITE_CHROMOSOME = 10;
+    public static final int NUMBER_OF_ELITE_CHROMOSOME = 15;
     public static Random random = new Random();
 
     public static void main(String[] args) throws IOException {
@@ -40,10 +37,13 @@ public class kNN_GA {
 
 
     public static void Sort(double[][] sort_array, final int column_sort) {
+       /*System.setProperty("java.util.Arrays.useLegacyMergeSort", "true"); */
+
         Arrays.sort(sort_array, new Comparator<double[]>() {
             @Override
             public int compare(double[] a, double[] b) {
-                if (a[column_sort - 1] > b[column_sort - 1]) return 1;
+                if ((a[column_sort - 1] > b[column_sort - 1] ) || (a[column_sort - 1] == b[column_sort - 1]))
+                    return 1;
                 else return -1;
             }
         });
@@ -114,19 +114,19 @@ public class kNN_GA {
             boolean multipointCrossover = random.nextBoolean();
             int crossOverPoint1 = random.nextInt(FEATURE_SIZE);
 
-            //for child 1
+            int end=Integer.MIN_VALUE;
+            if(multipointCrossover){
+                end = random.nextInt(FEATURE_SIZE);
+            }else{
+                end=p1.length;
+            }
+
             crossedOverChildren[0] = p1;
-            crossedOverChildren[0][crossOverPoint1] = p2[crossOverPoint1];
-
-            //for child 2
             crossedOverChildren[1] = p2;
-            crossedOverChildren[1][crossOverPoint1] = p1[crossOverPoint1];
 
-            if (multipointCrossover) {
-
-                int crossOverPoint2 = random.nextInt(FEATURE_SIZE);
-                crossedOverChildren[0][crossOverPoint2] = p2[crossOverPoint2];
-                crossedOverChildren[1][crossOverPoint2] = p1[crossOverPoint2];
+            for(int i=crossOverPoint1;i<end;i++){
+                crossedOverChildren[0][i] = p2[i];
+                crossedOverChildren[1][i]=  p1[i];
             }
 
         } else {
@@ -136,9 +136,8 @@ public class kNN_GA {
         return crossedOverChildren;
     }
 
-
     private static boolean[] mutation(boolean[] child) {
-        boolean[] mutatedChild = new boolean[FEATURE_SIZE];
+        boolean[] mutatedChild = null;
 
         Double randomProbability = random.nextDouble();
         mutatedChild = child;
@@ -150,46 +149,50 @@ public class kNN_GA {
         return mutatedChild;
     }
 
+    private static boolean[][] elitism(boolean[][] sol, double fitness[]){
+
+        boolean[][] elitePopulation = new boolean[POP_SIZE][FEATURE_SIZE];
+        double max = 0;
+        int index;
+        for (int j = 0; j < NUMBER_OF_ELITE_CHROMOSOME; j++) {
+
+            max = fitness[0];
+            index = 0;
+            for (int i = 0; i < fitness.length; i++) {
+                if (max < fitness[i]) {
+                    max = fitness[i];
+                    index = i;
+                }
+            }
+            elitePopulation[j] = sol[index];
+
+            fitness[index] = 0;
+
+        }
+        return elitePopulation;
+    }
+
     private static boolean[][] evolve(boolean[][] sol, double fitness[]) {
 
 
-        boolean[][] newPopulation = new boolean[POP_SIZE][FEATURE_SIZE];
-        boolean[][] temp_newPopulation = new boolean[POP_SIZE][FEATURE_SIZE];
-        double[][] tempFitnessIndices=new double[POP_SIZE][2];//storing fitness and index
-        boolean[] tempSingleSol=new boolean[FEATURE_SIZE];
-        for (int i = 0; i < POP_SIZE; i++) {
-            temp_newPopulation[i] = tournamentSelection(sol, fitness);
-        }
+        boolean[][] finalNewGeneration = new boolean[POP_SIZE][FEATURE_SIZE];
+        boolean[][] temp_elitePopulation = null;
+        boolean[][] temp_tournamentPopulation = new boolean[POP_SIZE][FEATURE_SIZE];
 
-        //compute fitness again
-        for (int j = 0; j < POP_SIZE; j++) {
-            int count = 0;
-            for (int k = 0; k < FEATURE_SIZE; k++) {
-                tempSingleSol[k] = sol[j][k];
-                if (tempSingleSol[k] == true) {
-                    count++;
-                }
+
+        //getting elite population from current generation
+        temp_elitePopulation=elitism(sol,fitness);
+        if (temp_elitePopulation != null) {
+
+            for(int i=0;i<NUMBER_OF_ELITE_CHROMOSOME;i++){
+                finalNewGeneration[i]=temp_elitePopulation[i];
             }
-            tempFitnessIndices[j][1] = j;
-            if (count > 40)
-                tempFitnessIndices[j][0] = 0.0;
-
-            else {
-                tempFitnessIndices[j][0] = KNN(train, val, train_label, val_label, tempSingleSol) - (count / FEATURE_SIZE);
-            }
-
         }
 
-        //pick top 10
-        Sort(tempFitnessIndices, 1);
-
-        //put them into newPopulation as it is
-
-        for(int i=POP_SIZE-1;i>POP_SIZE-NUMBER_OF_ELITE_CHROMOSOME-1;i--){
-            newPopulation[POP_SIZE-i-1]=temp_newPopulation[i];
+        //getting remaining population from tournament selection
+        for (int i = 0; i < POP_SIZE-NUMBER_OF_ELITE_CHROMOSOME; i++) {
+            temp_tournamentPopulation[i] = tournamentSelection(sol, fitness);
         }
-
-
 
 
         //check if parent1 and parent2 belong to indices in fit population , regenerate
@@ -197,26 +200,31 @@ public class kNN_GA {
         for(int i=0; i<POP_SIZE/2 && incrementer<POP_SIZE; i++){
 
             int parent1 = random.nextInt(POP_SIZE - 1);
-            int parent2 = random.nextInt(POP_SIZE - 1);
+            int parent2=parent1;
+            //to ensure different parents are selected
+            while(parent2==parent1){
+                parent2 = random.nextInt(POP_SIZE - 1);
+            }
 
-            boolean[][] crossedOverChildren = crossover(temp_newPopulation[parent1], temp_newPopulation[parent2]);
+            boolean[][] crossedOverChildren = crossover(temp_tournamentPopulation[parent1], temp_tournamentPopulation[parent2]);
 
-            for (int j = 0; j < crossedOverChildren.length; j++) {
-                newPopulation[incrementer++]=mutation(crossedOverChildren[j]);
+            for (int j = 0; j < crossedOverChildren.length && incrementer<POP_SIZE; j++) {
+                finalNewGeneration[incrementer]=mutation(crossedOverChildren[j]);
+                incrementer++;
             }
 
         }
 
-        return newPopulation;
+        return finalNewGeneration;
     }
 
     private static boolean[] tournamentSelection(boolean[][] sol, double[] fitness) {
-        Random r = new Random();
         int maxAt = 0;
         boolean[][] tournamentSelectionPopulation = new boolean[TOURNAMENT_SELECTION_SIZE][FEATURE_SIZE];
         double[] tournamentFitness = new double[TOURNAMENT_SELECTION_SIZE];
+
         for (int i = 0; i < TOURNAMENT_SELECTION_SIZE; i++) {
-            int selectionIndex = r.nextInt(POP_SIZE - 1);
+            int selectionIndex = random.nextInt(POP_SIZE - 1);
             tournamentSelectionPopulation[i] = sol[selectionIndex];
             tournamentFitness[i] = fitness[selectionIndex];
         }
