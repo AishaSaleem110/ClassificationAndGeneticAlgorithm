@@ -21,7 +21,7 @@ public class kNN_GA {
     public static final int POP_SIZE = 100; //population size, DO NOT MODIFY
     public static final int MAX_GEN = 50; //maximum generation, DO NOT MODIFY
 
-    public static final int NUMBER_OF_ELITE_CHROMOSOME = 15;
+    public static final int NUMBER_OF_ELITE_CHROMOSOME = 20;
     public static Random random = new Random();
 
     public static void main(String[] args) throws IOException {
