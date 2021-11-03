@@ -37,7 +37,7 @@ public class kNN_GA {
 
 
     public static void Sort(double[][] sort_array, final int column_sort) {
-       /*System.setProperty("java.util.Arrays.useLegacyMergeSort", "true"); */
+
 
         Arrays.sort(sort_array, new Comparator<double[]>() {
             @Override
@@ -190,6 +190,7 @@ public class kNN_GA {
         }
 
         //getting remaining population from tournament selection
+        //the ones selected in elitism will not be selected again as their fitness value set to 0 in fitness array
         for (int i = 0; i < POP_SIZE-NUMBER_OF_ELITE_CHROMOSOME; i++) {
             temp_tournamentPopulation[i] = tournamentSelection(sol, fitness);
         }
