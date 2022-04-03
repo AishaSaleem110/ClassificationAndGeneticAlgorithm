@@ -26,11 +26,11 @@ This code is written in Java
 
 ### Running The Code
 *Open a command prompt window and go to the directory where you saved the java program.
-You can run KNN.java or KNN_GA.java or KNN_test.java
+You can run kNN.java or kNN_GA.java or kNN_test.java
 Type :
-javac KNN.java
+javac kNN.java
 Now,  to run your program, type :
-java KNN
+java kNN
 
 
 *The files are self-contained and all necessary libraries are imported.
