@@ -25,11 +25,12 @@ Both these constraints must be met, otherwise you will get a mark of zero
 This code is written in Java
 
 ### Running The Code
-*Open a command prompt window and go to the directory where you saved the java program (Main.java).
+*Open a command prompt window and go to the directory where you saved the java program.
+You can run KNN.java or KNN_GA.java or KNN_test.java
 Type :
-javac Main.java
+javac KNN.java
 Now,  to run your program, type :
-java Main
+java KNN
 
 
 *The files are self-contained and all necessary libraries are imported.
